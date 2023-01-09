@@ -9,5 +9,11 @@ logger.setLevel(logging.INFO)
 lg.attach_stdout_handler(logger)
 
 
+
+
 async def handle_quote(message: discord.Message) -> None:
-    logger.info(f"{message.content}")
+    """
+    Read message, add a 🪶 reaction, and then confirm the message
+    """
+    emoji = discord.Emoji("🪶")
+    message.add_reaction(emoji)
