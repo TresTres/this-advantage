@@ -26,7 +26,7 @@ def split_content(msg: discord.Message) -> Tuple[str, str]:
     if not content:
         return "", ""
     split_content = msg.content.split()
-    return split_content[0], split_content[1:]
+    return split_content[0].strip(), " ".join(split_content[1:])
 
 
 @client.event
@@ -39,9 +39,9 @@ async def on_message(message: discord.Message) -> None:
     if message.author.bot:
         return
     logger.info(f"Message from {message.author} (ID: {message.author.id})")
-    command = message.content.split()[0].strip().lower()
+    command, rest = split_content(message)
     if command == "!quote":
-        await handler.functions.handle_quote(message)
+        await handler.functions.handle_quote(message, rest)
 
-
-client.run(TOKEN)
+if __name__ == "__main__":
+    client.run(TOKEN)

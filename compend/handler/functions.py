@@ -11,9 +11,9 @@ lg.attach_stdout_handler(logger)
 
 
 
-async def handle_quote(message: discord.Message) -> None:
+async def handle_quote(message: discord.Message, _ : str) -> None:
     """
-    Read message, add a 🪶 reaction, and then confirm the message
+    Validate message, add a 🪶 reaction, and then confirm the message
     """
-    emoji = discord.Emoji("🪶")
-    message.add_reaction(emoji)
+    
+    await message.add_reaction("🪶")

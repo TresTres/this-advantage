@@ -13,7 +13,9 @@ class FakeMessage():
 @pytest.mark.parametrize(
     "test_msg,expected_tuple",
     [
-        ("", ("", ""))
+        ("", ("", "")),
+        ("hello", ("hello", "")),
+        ("foo bar   baz", ("foo", "bar baz"))
     ]
 )
 def test_split_content(test_msg, expected_tuple):
