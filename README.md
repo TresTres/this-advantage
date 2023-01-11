@@ -9,7 +9,7 @@ To setup compend-bot in an application, you'll need to do the following:
 3. Use the OAuth2 URL generator - select a _bot_ SCOPE and _Administrator_ PERMISSIONS
 4. Use the generated URL to attach the bot to a server/guild 
 5. Enable the `message_content` privileged intent for the bot
-6. Generate and copy the bot token to the `COMPENT_DISCORD_TOKEN` env variable
+6. Generate and copy the bot token to the `COMPEND_DISCORD_TOKEN` env variable
 
 
 ### Local Run
