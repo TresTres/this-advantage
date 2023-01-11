@@ -1,20 +1,15 @@
 # __main__
-import os
 from typing import Tuple
 import discord
 import logging
 
 import handler.functions
 import utils.logging as lg
+from handler.settings import LOADED_TOKENS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lg.attach_stdout_handler(logger)
-
-TOKEN = os.getenv("COMPENT_DISCORD_TOKEN", "")
-if not TOKEN:
-    logger.error("Missing DISCORD_TOKEN environment variable.")
-    exit(1)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -38,10 +33,11 @@ async def on_ready() -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author.bot:
         return
+    
     logger.info(f"Message from {message.author} (ID: {message.author.id})")
     command, rest = split_content(message)
     if command == "!quote":
         await handler.functions.handle_quote(message, rest)
 
 if __name__ == "__main__":
-    client.run(TOKEN)
+    client.run(LOADED_TOKENS.get("COMPEND_DISCORD_TOKEN"))
