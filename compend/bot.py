@@ -3,7 +3,7 @@ from typing import Tuple
 import discord
 import logging
 
-import handler.functions
+import handler.function
 import utils.logging as lg
 from handler.settings import LOADED_TOKENS
 
@@ -35,9 +35,8 @@ async def on_message(message: discord.Message) -> None:
         return
     
     logger.info(f"Message from {message.author} (ID: {message.author.id})")
-    command, rest = split_content(message)
-    if command == "!quote":
-        await handler.functions.handle_quote(message, rest)
+    command, _ = split_content(message)
+    await handler.function.handle_command(command, message)
 
 if __name__ == "__main__":
     client.run(LOADED_TOKENS.get("COMPEND_DISCORD_TOKEN"))
