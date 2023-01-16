@@ -6,7 +6,7 @@ import logging
 import handler.function
 import utils.logging as lg
 from utils import general
-from handler.settings import LOADED_TOKENS
+from handler.settings import LOADED_TOKENS, load_tokens
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,7 +18,7 @@ client = discord.Client(intents=intents)
 
 
 @client.event
-async def on_ready() -> None:
+async def on_ready() -> None: 
     logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
 
 
@@ -32,4 +32,5 @@ async def on_message(message: discord.Message) -> None:
     await handler.function.handle_command(command, message)
 
 if __name__ == "__main__":
+    load_tokens()
     client.run(LOADED_TOKENS.get("COMPEND_DISCORD_TOKEN"))

@@ -1,4 +1,3 @@
-import pytest 
 import notion.api as notion
 
 
