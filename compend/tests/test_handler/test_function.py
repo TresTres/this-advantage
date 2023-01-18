@@ -1,20 +1,38 @@
-import pytest 
+import pytest
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, patch
-import discord
 
 from handler import function
 
-@pytest.mark.asyncio 
-@patch('discord.Message', new_callable=AsyncMock)
-async def test_handle_command_invalid(mock_message):
-    await function.handle_command("!foo", mock_message)
-    mock_message.add_reaction.assert_called_once_with("❌")
-    mock_message.reply.assert_called_once_with("Command !foo is invalid.")
+
+
+class TestCommandParse(IsolatedAsyncioTestCase):
     
-@pytest.mark.asyncio 
-@patch('handler.function.handle_quote')
-@patch('discord.Message', new_callable=AsyncMock)
-async def test_handle_command_valid(mock_message, mock_handler):
-    with patch.dict('handler.function.LIBRARY', {'foo': mock_handler}):
-        await function.handle_command("!foo", mock_message)
-    mock_handler.assert_called_once_with(mock_message)
+    @patch("discord.Message", new_callable=AsyncMock)
+    async def test_parse_invalid(self, mock_message):
+        await function.parse_command("%&%^&askdf", mock_message)
+        mock_message.add_reaction.assert_called_once_with("❌")
+        mock_message.reply.assert_called_once_with("Command format is invalid (must start with '?' or '!')")
+
+
+
+class TestCommandExecute(IsolatedAsyncioTestCase):
+    
+    mock_function = AsyncMock(return_value="bar")
+    FAKE_FUNCTIONS = {
+        "foo": mock_function
+    }
+
+    @patch("discord.Message", new_callable=AsyncMock)
+    async def test_handle_command_invalid(self, mock_message):
+        await function.execute_command_from_table(self.FAKE_FUNCTIONS, "baz", mock_message)
+        mock_message.add_reaction.assert_called_once_with("❌")
+        mock_message.reply.assert_called_once_with("Command baz is not recognized.")
+
+
+    @patch("discord.Message", new_callable=AsyncMock)
+    async def test_handle_command_valid(self, mock_message):
+        await function.execute_command_from_table(self.FAKE_FUNCTIONS, "foo", mock_message)
+        self.mock_function.assert_called_once_with(mock_message)
+
+

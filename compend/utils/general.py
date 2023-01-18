@@ -1,11 +1,9 @@
-
-
 from typing import Tuple
 
 
 def split_first_token(string: str, sep: str = " ") -> Tuple[str, str]:
     """
-    Split the first word from the rest of a given string 
+    Split the first word from the rest of a given string
     """
     if not string:
         return "", ""

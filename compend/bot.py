@@ -18,7 +18,7 @@ client = discord.Client(intents=intents)
 
 
 @client.event
-async def on_ready() -> None: 
+async def on_ready() -> None:
     logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
 
 
@@ -26,10 +26,13 @@ async def on_ready() -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author.bot:
         return
-    
+
     logger.info(f"Message from {message.author} (ID: {message.author.id})")
     command, _ = general.split_first_token(message.content)
-    await handler.function.handle_command(command, message)
+    command = command.strip()
+    if any(command.startswith(symbol) for symbol in ["!", "?"]):
+        await handler.function.parse_command(command, message)
+
 
 if __name__ == "__main__":
     load_tokens()
