@@ -63,7 +63,7 @@ async def request_notion_api(
     return requests.request(method.name, url, headers=headers, data=data)
 
 
-async def find_page(title: str) -> Dict[str, Any]:
+async def find_page(title: str) -> List[Dict]:
     """
     Obtains the object of a specific Notion page
     """
@@ -78,12 +78,12 @@ async def find_page(title: str) -> Dict[str, Any]:
     resp = await request_notion_api("search", RestMethod.POST, payload)
     data = unwrap_response(resp)
     if not data["results"]:
-        ve_message = f"No result for page matghing title `{title}`."
+        ve_message = f"No result for page matching title `{title}`."
         logger.error(ve_message)
         raise ValueError(ve_message)
-    found_title = data["results"][0]["properties"]["title"]["title"][0]["plain_text"]
-    logger.info(f"Page with title {found_title} found")
-    return data["results"][0]
+
+    logger.info(f"Found {len(data['results'])} results searching for page `{title}`")
+    return data["results"]
 
 
 async def find_child_page(parent_id: str, child_title: str) -> str:
