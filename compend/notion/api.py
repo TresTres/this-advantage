@@ -1,16 +1,25 @@
 from enum import Enum
 from typing import Any, Dict, List
-import requests, json
+import json
 import logging
+import urllib3
 
 import utils.logging as lg
-from handler.settings import LOADED_TOKENS, ACTIVE_NOTION_VERSION
+from handler.settings import COMPEND_NOTION_TOKEN, ACTIVE_NOTION_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lg.attach_stdout_handler(logger)
 
 RestMethod = Enum("RestMethod", ["GET", "POST"])
+
+http_manager = urllib3.PoolManager(
+    headers={
+        "Authorization": f"Bearer {COMPEND_NOTION_TOKEN}",
+        "Content-Type": "application/json",
+        "Notion-Version": ACTIVE_NOTION_VERSION,
+    }
+)
 
 
 class FailedRequestException(Exception):
@@ -26,41 +35,45 @@ def create_url_target(endpoint: str) -> str:
     return f"https://api.notion.com/v1/{endpoint}"
 
 
-def construct_headers() -> Dict[str, str]:
-    """
-    Construct API request headers
-    """
-    token = LOADED_TOKENS.get("COMPEND_NOTION_TOKEN")
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Notion-Version": ACTIVE_NOTION_VERSION,
-    }
-
-
-def unwrap_response(response: requests.Response) -> Dict[str, Any]:
+def unwrap_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
     """
     If a response is valid, returns the content in dictionary format
     """
-    if response.ok:
-        return json.loads(response.content)
+    if 300 > response.status >= 200:
+        # reason OK
+        return json.loads(response.data)
     logger.error(f"Request failed: {response.reason}")
-    content = json.loads(response.content)
-    raise FailedRequestException(f"Failed: {content['message']}")
+    failure_body = json.loads(response.data)
+    raise FailedRequestException(f"Failed: {failure_body['message']}")
 
 
 async def request_notion_api(
     target: str, method: RestMethod, payload: Dict = None
-) -> requests.Response:
+) -> urllib3.HTTPResponse:
     """
     Get a response from the Notion API
     """
     if payload is None:
         payload = {}
     url = create_url_target(target)
-    headers = construct_headers()
     data = json.dumps(payload)
-    return requests.request(method.name, url, headers=headers, data=data)
+    return http_manager.request(method.name, url, body=data)
+
+
+async def get_page_object_for_url(url: str) -> Dict:
+    """
+    Attempts to get the page object for the given url
+    """
+    parsed_url = urllib3.util.parse_url(url)
+    path = parsed_url.path
+    if len(path) <= 32:
+        raise ValueError(f"Invalid Notion page url: {url}")
+    parsed_path = path[len(path) - 32 :]
+    parsed_id = f"{parsed_path[:8]}-{parsed_path[8:12]}-{parsed_path[12:16]}-{parsed_path[16:20]}-{parsed_path[20:32]}"
+    logger.info(f"Attemptng to retrieve page for id {parsed_id}")
+    target = f"pages/{parsed_id}"
+    response = await request_notion_api(target, RestMethod.GET)
+    return unwrap_response(response)
 
 
 async def find_page(title: str) -> List[Dict]:

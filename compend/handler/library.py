@@ -3,11 +3,11 @@
 from enum import Enum
 import logging
 from typing import Dict
-import discord
 from discord.ext import commands
 
 from utils.general import split_first_token
 import notion.api as notion
+import notion.data as notion_data
 import utils.logging as lg
 
 logger = logging.getLogger(__name__)
@@ -35,14 +35,6 @@ async def emoji_reply(ctx: commands.Context, reply: str, msg_type: MessageType) 
     logger.info(f"{emoji} replying with: {reply}")
     await ctx.message.add_reaction(emoji)
     await ctx.message.reply(reply)
-
-
-"""
-async def create_menu(message: discord.Message, )
-
-        page_title = page_object["properties"]["title"]["title"][0]["plain_text"]
-        NOTE_HOME_PAGE[page_title] = page_object["id"]
-"""
 
 
 async def get_home_title(ctx: commands.Context) -> None:
@@ -73,9 +65,13 @@ async def target_note_home(ctx: commands.Context, target_url: str) -> None:
         await get_home_title(ctx)
         return
     try:
-        page_objects = []
+        page_object = await notion.get_page_object_for_url(target_url)
+        page_title = notion_data.get_title(page_object)
+        NOTE_HOME_PAGE[page_title] = page_object["id"]
+        await ctx.message.add_reaction("🏠")
+        await emoji_reply(ctx, f"Home page set to {page_title}.", MessageType.SUCCESS)
     except ValueError as ve:
-        await emoji_reply(ctx.message, str(ve), MessageType.FAIL)
+        await emoji_reply(ctx, str(ve), MessageType.FAIL)
 
 
 """

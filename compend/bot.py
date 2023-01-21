@@ -5,8 +5,7 @@ from discord.ext import commands
 import logging
 
 import utils.logging as lg
-from utils import general
-from handler.settings import LOADED_TOKENS, load_tokens
+from handler.settings import COMPEND_DISCORD_TOKEN
 from handler import library
 
 logger = logging.getLogger(__name__)
@@ -32,5 +31,4 @@ async def home_page(ctx: commands.Context, target_url: str = "") -> None:
 
 
 if __name__ == "__main__":
-    load_tokens()
-    bot.run(LOADED_TOKENS.get("COMPEND_DISCORD_TOKEN"))
+    bot.run(COMPEND_DISCORD_TOKEN)
