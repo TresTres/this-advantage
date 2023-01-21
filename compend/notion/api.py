@@ -1,9 +1,31 @@
-from typing import Dict
-import requests, json
+from enum import Enum
+from typing import Any, Dict, List
+import json
+import logging
+import urllib3
 
-from handler.settings import LOADED_TOKENS, ACTIVE_NOTION_VERSION
+import utils.logging as lg
+from handler.settings import COMPEND_NOTION_TOKEN, ACTIVE_NOTION_VERSION
 
-NOTION_PAGE_ID = "2fca0c39-6af3-41d5-9d9d-e2455377e3c3"
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+lg.attach_stdout_handler(logger)
+
+RestMethod = Enum("RestMethod", ["GET", "POST"])
+
+http_manager = urllib3.PoolManager(
+    headers={
+        "Authorization": f"Bearer {COMPEND_NOTION_TOKEN}",
+        "Content-Type": "application/json",
+        "Notion-Version": ACTIVE_NOTION_VERSION,
+    }
+)
+
+
+class FailedRequestException(Exception):
+    """While not necessarily a fast-fail, should be treated as an exception"""
+
+    pass
 
 
 def create_url_target(endpoint: str) -> str:
@@ -12,37 +34,90 @@ def create_url_target(endpoint: str) -> str:
     """
     return f"https://api.notion.com/v1/{endpoint}"
 
-def construct_headers() -> Dict[str, str]:
-    """
-    Construct API request headers
-    """
-    token = LOADED_TOKENS.get("COMPEND_NOTION_TOKEN")
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Notion-Version": ACTIVE_NOTION_VERSION
-    }
 
-async def create_page() -> None:
+def unwrap_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
     """
-    Test method to create a new and empty notion page
+    If a response is valid, returns the content in dictionary format
     """
-    
-    url = create_url_target("pages")
-    headers = construct_headers()
-    payload = {
-        "parent": { "page_id": NOTION_PAGE_ID },
-        "properties": {
-            "title": [
-                {
-                    "text": {
-                        "content": "Test page"
-                    }
-                }
-            ]
-        }
-    }
+    if 300 > response.status >= 200:
+        # reason OK
+        return json.loads(response.data)
+    logger.error(f"Request failed: {response.reason}")
+    failure_body = json.loads(response.data)
+    raise FailedRequestException(f"Failed: {failure_body['message']}")
 
+
+async def request_notion_api(
+    target: str, method: RestMethod, payload: Dict = None
+) -> urllib3.HTTPResponse:
+    """
+    Get a response from the Notion API
+    """
+    if payload is None:
+        payload = {}
+    url = create_url_target(target)
     data = json.dumps(payload)
-    res = requests.request("POST", url, headers=headers, data=data)    
-    
+    return http_manager.request(method.name, url, body=data)
+
+
+async def get_page_object_for_url(url: str) -> Dict:
+    """
+    Attempts to get the page object for the given url
+    """
+    parsed_url = urllib3.util.parse_url(url)
+    path = parsed_url.path
+    if len(path) <= 32:
+        raise ValueError(f"Invalid Notion page url: {url}")
+    parsed_path = path[len(path) - 32 :]
+    parsed_id = f"{parsed_path[:8]}-{parsed_path[8:12]}-{parsed_path[12:16]}-{parsed_path[16:20]}-{parsed_path[20:32]}"
+    logger.info(f"Attemptng to retrieve page for id {parsed_id}")
+    target = f"pages/{parsed_id}"
+    response = await request_notion_api(target, RestMethod.GET)
+    return unwrap_response(response)
+
+
+async def find_page(title: str) -> List[Dict]:
+    """
+    Obtains the object of a specific Notion page
+    """
+    payload = {
+        "query": title,
+        "filter": {
+            "property": "object",
+            "value": "page",
+        },
+        "page_size": 5,
+    }
+    resp = await request_notion_api("search", RestMethod.POST, payload)
+    data = unwrap_response(resp)
+    if not data["results"]:
+        ve_message = f"No result for page matching title `{title}`."
+        logger.error(ve_message)
+        raise ValueError(ve_message)
+
+    logger.info(f"Found {len(data['results'])} results searching for page `{title}`")
+    return data["results"]
+
+
+async def find_child_page(parent_id: str, child_title: str) -> str:
+    """
+    Search by name for the child page of a given parent page
+    """
+
+
+async def get_children(parent_id: str) -> Dict[str, List]:
+    """
+    Obtain the children objects of the given parent page,
+    separated by block type
+    """
+    children_endpoint = f"blocks/{parent_id}/children"
+    resp = await request_notion_api(children_endpoint, RestMethod.GET)
+    data = unwrap_response(resp)
+
+    children = {}
+    for obj in data["results"]:
+        obj_type = obj["object"]
+        children.setdefault(obj_type, [])
+        children[obj_type].append(obj)
+
+    return children

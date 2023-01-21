@@ -1,11 +1,12 @@
 # __main__
 from typing import Tuple
 import discord
+from discord.ext import commands
 import logging
 
-import handler.functions
 import utils.logging as lg
-from handler.settings import LOADED_TOKENS
+from handler.settings import COMPEND_DISCORD_TOKEN
+from handler import library
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -13,31 +14,21 @@ lg.attach_stdout_handler(logger)
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix=["!", "?"], case_insensitive=True, intents=intents)
 
 
-def split_content(msg: discord.Message) -> Tuple[str, str]:
-    content = msg.content
-    if not content:
-        return "", ""
-    split_content = msg.content.split()
-    return split_content[0].strip(), " ".join(split_content[1:])
-
-
-@client.event
+@bot.event
 async def on_ready() -> None:
-    logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
+    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
 
 
-@client.event
-async def on_message(message: discord.Message) -> None:
-    if message.author.bot:
+@bot.command(name="home")
+async def home_page(ctx: commands.Context, target_url: str = "") -> None:
+    if ctx.prefix == "?":
+        await library.get_home_title(ctx)
         return
-    
-    logger.info(f"Message from {message.author} (ID: {message.author.id})")
-    command, rest = split_content(message)
-    if command == "!quote":
-        await handler.functions.handle_quote(message, rest)
+    await library.target_note_home(ctx, target_url)
+
 
 if __name__ == "__main__":
-    client.run(LOADED_TOKENS.get("COMPEND_DISCORD_TOKEN"))
+    bot.run(COMPEND_DISCORD_TOKEN)
