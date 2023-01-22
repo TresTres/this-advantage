@@ -1,13 +1,12 @@
 # handler.library
 
-from enum import Enum
+from strenum import StrEnum
 import logging
 from typing import Dict
 from discord.ext import commands
 
-from utils.general import split_first_token
+from notion.data import PageObject
 import notion.api as notion
-import notion.data as notion_data
 import utils.logging as lg
 
 logger = logging.getLogger(__name__)
@@ -15,11 +14,11 @@ logger.setLevel(logging.INFO)
 lg.attach_stdout_handler(logger)
 
 
-NOTE_HOME_PAGE: Dict[str, str] = {}
-NOTE_SESSION_PAGE: str = ""
+NOTE_HOME_PAGE: PageObject = None
+NOTE_SESSION_PAGE: PageObject = None
 
 
-MessageType = Enum("MessageType", ["FAIL", "SUCCESS", "INFO"])
+MessageType = StrEnum("MessageType", ["FAIL", "SUCCESS", "INFO"])
 
 
 async def emoji_reply(ctx: commands.Context, reply: str, msg_type: MessageType) -> None:
@@ -49,7 +48,7 @@ async def get_home_title(ctx: commands.Context) -> None:
         return
     await emoji_reply(
         ctx,
-        f"Home page currently set to {next(iter(NOTE_HOME_PAGE))}.",
+        f"Home page currently set to {NOTE_HOME_PAGE.page_title}.",
         MessageType.INFO,
     )
     return
@@ -66,12 +65,13 @@ async def target_note_home(ctx: commands.Context, target_url: str) -> None:
         return
     try:
         page_object = await notion.get_page_object_for_url(target_url)
-        page_title = notion_data.get_title(page_object)
-        NOTE_HOME_PAGE[page_title] = page_object["id"]
+        page_title = page_object.page_title
+        NOTE_HOME_PAGE[page_title] = page_object.id
         await ctx.message.add_reaction("🏠")
         await emoji_reply(ctx, f"Home page set to {page_title}.", MessageType.SUCCESS)
     except ValueError as ve:
         await emoji_reply(ctx, str(ve), MessageType.FAIL)
+
 
 
 """
