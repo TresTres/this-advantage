@@ -1,9 +1,11 @@
-from enum import Enum
+from strenum import StrEnum
 from typing import Any, Dict, List
 import json
 import logging
 import urllib3
 
+
+from notion.data import PageObject
 import utils.logging as lg
 from handler.settings import COMPEND_NOTION_TOKEN, ACTIVE_NOTION_VERSION
 
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lg.attach_stdout_handler(logger)
 
-RestMethod = Enum("RestMethod", ["GET", "POST"])
+HTTPRestMethod = StrEnum("RestMethod", ["GET", "POST"])
 
 http_manager = urllib3.PoolManager(
     headers={
@@ -35,7 +37,7 @@ def create_url_target(endpoint: str) -> str:
     return f"https://api.notion.com/v1/{endpoint}"
 
 
-def unwrap_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
+def unwrap_HTTP_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
     """
     If a response is valid, returns the content in dictionary format
     """
@@ -48,7 +50,7 @@ def unwrap_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
 
 
 async def request_notion_api(
-    target: str, method: RestMethod, payload: Dict = None
+    target: str, method: HTTPRestMethod, payload: Dict = None
 ) -> urllib3.HTTPResponse:
     """
     Get a response from the Notion API
@@ -57,10 +59,10 @@ async def request_notion_api(
         payload = {}
     url = create_url_target(target)
     data = json.dumps(payload)
-    return http_manager.request(method.name, url, body=data)
+    return http_manager.request(method, url, body=data)
 
 
-async def get_page_object_for_url(url: str) -> Dict:
+async def get_page_object_for_url(url: str) -> PageObject:
     """
     Attempts to get the page object for the given url
     """
@@ -72,8 +74,9 @@ async def get_page_object_for_url(url: str) -> Dict:
     parsed_id = f"{parsed_path[:8]}-{parsed_path[8:12]}-{parsed_path[12:16]}-{parsed_path[16:20]}-{parsed_path[20:32]}"
     logger.info(f"Attemptng to retrieve page for id {parsed_id}")
     target = f"pages/{parsed_id}"
-    response = await request_notion_api(target, RestMethod.GET)
-    return unwrap_response(response)
+    response = await request_notion_api(target, HTTPRestMethod.GET)
+    data = unwrap_HTTP_response(response)
+    return PageObject(**data)
 
 
 async def find_page(title: str) -> List[Dict]:
@@ -88,8 +91,8 @@ async def find_page(title: str) -> List[Dict]:
         },
         "page_size": 5,
     }
-    resp = await request_notion_api("search", RestMethod.POST, payload)
-    data = unwrap_response(resp)
+    resp = await request_notion_api("search", HTTPRestMethod.POST, payload)
+    data = unwrap_HTTP_response(resp)
     if not data["results"]:
         ve_message = f"No result for page matching title `{title}`."
         logger.error(ve_message)
@@ -111,8 +114,8 @@ async def get_children(parent_id: str) -> Dict[str, List]:
     separated by block type
     """
     children_endpoint = f"blocks/{parent_id}/children"
-    resp = await request_notion_api(children_endpoint, RestMethod.GET)
-    data = unwrap_response(resp)
+    resp = await request_notion_api(children_endpoint, HTTPRestMethod.GET)
+    data = unwrap_HTTP_response(resp)
 
     children = {}
     for obj in data["results"]:
