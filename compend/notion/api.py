@@ -35,7 +35,7 @@ def create_url_target(endpoint: str) -> str:
     return f"https://api.notion.com/v1/{endpoint}"
 
 
-def unwrap_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
+def unwrap_HTTP_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
     """
     If a response is valid, returns the content in dictionary format
     """
@@ -73,7 +73,7 @@ async def get_page_object_for_url(url: str) -> Dict:
     logger.info(f"Attemptng to retrieve page for id {parsed_id}")
     target = f"pages/{parsed_id}"
     response = await request_notion_api(target, RestMethod.GET)
-    return unwrap_response(response)
+    return unwrap_HTTP_response(response)
 
 
 async def find_page(title: str) -> List[Dict]:
@@ -89,7 +89,7 @@ async def find_page(title: str) -> List[Dict]:
         "page_size": 5,
     }
     resp = await request_notion_api("search", RestMethod.POST, payload)
-    data = unwrap_response(resp)
+    data = unwrap_HTTP_response(resp)
     if not data["results"]:
         ve_message = f"No result for page matching title `{title}`."
         logger.error(ve_message)
@@ -112,7 +112,7 @@ async def get_children(parent_id: str) -> Dict[str, List]:
     """
     children_endpoint = f"blocks/{parent_id}/children"
     resp = await request_notion_api(children_endpoint, RestMethod.GET)
-    data = unwrap_response(resp)
+    data = unwrap_HTTP_response(resp)
 
     children = {}
     for obj in data["results"]:
