@@ -32,7 +32,9 @@ class TestGetHomeTitle:
             )
 
     @patch("handler.library.emoji_reply")
-    async def test_home_title_saved(self, mock_reply, fake_discord_context, fake_page_object):
+    async def test_home_title_saved(
+        self, mock_reply, fake_discord_context, fake_page_object
+    ):
         with patch("handler.library.NOTE_HOME_PAGE", fake_page_object):
             fake_page_object.page_title = "foo"
             await library.get_home_title(fake_discord_context)

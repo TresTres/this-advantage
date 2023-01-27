@@ -22,4 +22,4 @@ def fake_http_response() -> MagicMock:
 
 @pytest.fixture(scope="function")
 def fake_page_object() -> MagicMock:
-    return MagicMock(notion.data.PageObject)
+    return MagicMock(notion.data_types.PageObject)
