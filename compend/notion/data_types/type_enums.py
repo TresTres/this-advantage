@@ -1,0 +1,66 @@
+from strenum import StrEnum
+
+RTOType = StrEnum("RTOType", ["text", "mention", "equation"])
+PropertyType = StrEnum(
+    "PropertyType",
+    [
+        "checkbox",
+        "created_by",
+        "created_time",
+        "date",
+        "email",
+        "files",
+        "formula",
+        "last_edited_by",
+        "last_edited_time",
+        "multi_select",
+        "number",
+        "people",
+        "phone_number",
+        "relation",
+        "rich_text",
+        "rollup",
+        "select",
+        "status",
+        "title",
+        "url",
+    ],
+)
+BlockType = StrEnum(
+    "BlockType",
+    [
+        "bookmark",
+        "bulleted_list_item",
+        "callout",
+        "child_database",
+        "child_page",
+        "column",
+        "column_list",
+        "divider",
+        "embed",
+        "equation",
+        "file",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "image",
+        "link_preview",
+        "link_to_page",
+        "numbered_list_item",
+        "paragraph",
+        "pdf",
+        "quote",
+        "synced_block",
+        "table",
+        "table_of_contents",
+        "table_row",
+        "template",
+        "to_do",
+        "toggle",
+        "unsupported",
+        "video",
+    ],
+)
+
+
+__all__ = ["BlockType"]

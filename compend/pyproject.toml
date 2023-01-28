@@ -7,10 +7,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~3.9"
-discord-py = "~2.1.0"
 requests = "~2.28.1"
 pydantic = "~1.10.4"
-strenum = "^0.4.9"
+strenum = "~0.4.9"
+py-cord = "~2.3.2"
 
 
 [tool.poetry.group.dev.dependencies]

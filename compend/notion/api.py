@@ -5,7 +5,7 @@ import logging
 import urllib3
 
 
-from notion.data import PageObject
+from notion.data_types import PageObject, BlockObject, ChildrenResponseObject, BlockType
 import utils.logging as lg
 from handler.settings import COMPEND_NOTION_TOKEN, ACTIVE_NOTION_VERSION
 
@@ -23,12 +23,13 @@ http_manager = urllib3.PoolManager(
     }
 )
 
-
 class FailedRequestException(Exception):
-    """While not necessarily a fast-fail, should be treated as an exception"""
-
+    """Failure of HTTP Request."""
     pass
 
+class FailedURLParseException(Exception):
+    """Failure to convert URL string to an ID"""
+    pass
 
 def create_url_target(endpoint: str) -> str:
     """
@@ -36,6 +37,16 @@ def create_url_target(endpoint: str) -> str:
     """
     return f"https://api.notion.com/v1/{endpoint}"
 
+def obtain_id_from_url(url: str) -> str:
+    """
+    Generates the id from a given url
+    """
+    parsed_url = urllib3.util.parse_url(url)
+    path = parsed_url.path
+    if ('notion' not in parsed_url.hostname) or (not path) or len(path) <= 32:
+        raise FailedURLParseException(f"Invalid Notion page url: {url}")
+    parsed_path = path[len(path) - 32 :]
+    return f"{parsed_path[:8]}-{parsed_path[8:12]}-{parsed_path[12:16]}-{parsed_path[16:20]}-{parsed_path[20:32]}"
 
 def unwrap_HTTP_response(response: urllib3.HTTPResponse) -> Dict[str, Any]:
     """
@@ -61,23 +72,24 @@ async def request_notion_api(
     data = json.dumps(payload)
     return http_manager.request(method, url, body=data)
 
+async def get_page_object_for_id(id: str) -> PageObject:
+    """
+    Attempts to get the page object for the given id
+    """
+    logger.info(f"Attemptng to retrieve page for id {id}")
+    target = f"pages/{id}"
+    response = await request_notion_api(target, HTTPRestMethod.GET)
+    data = unwrap_HTTP_response(response)
+    return PageObject(**data)
+
 
 async def get_page_object_for_url(url: str) -> PageObject:
     """
     Attempts to get the page object for the given url
     """
-    parsed_url = urllib3.util.parse_url(url)
-    path = parsed_url.path
-    if len(path) <= 32:
-        raise ValueError(f"Invalid Notion page url: {url}")
-    parsed_path = path[len(path) - 32 :]
-    parsed_id = f"{parsed_path[:8]}-{parsed_path[8:12]}-{parsed_path[12:16]}-{parsed_path[16:20]}-{parsed_path[20:32]}"
-    logger.info(f"Attemptng to retrieve page for id {parsed_id}")
-    target = f"pages/{parsed_id}"
-    response = await request_notion_api(target, HTTPRestMethod.GET)
-    data = unwrap_HTTP_response(response)
-    return PageObject(**data)
-
+    logger.info(f"Attempting to retrieve page for url {url}")
+    parsed_id = obtain_id_from_url(url)
+    return await get_page_object_for_id(parsed_id)
 
 async def find_page(title: str) -> List[Dict]:
     """
@@ -108,19 +120,21 @@ async def find_child_page(parent_id: str, child_title: str) -> str:
     """
 
 
-async def get_children(parent_id: str) -> Dict[str, List]:
+async def get_children(parent_id: str) -> ChildrenResponseObject:
     """
-    Obtain the children objects of the given parent page,
-    separated by block type
+    Obtain the children objects of the given parent page
     """
+
     children_endpoint = f"blocks/{parent_id}/children"
     resp = await request_notion_api(children_endpoint, HTTPRestMethod.GET)
-    data = unwrap_HTTP_response(resp)
+    return ChildrenResponseObject(**unwrap_HTTP_response(resp))
 
-    children = {}
-    for obj in data["results"]:
-        obj_type = obj["object"]
-        children.setdefault(obj_type, [])
-        children[obj_type].append(obj)
 
-    return children
+async def get_children_by_type(
+    parent_id: str, block_type: BlockType
+) -> List[BlockObject]:
+    """
+    Obtain the children objects from a page that match the given type
+    """
+    children = await get_children(parent_id)
+    return [c for c in children.results if c.type == block_type]
