@@ -1,12 +1,11 @@
 from typing import Any, Callable, List
 from discord.ui.view import View
 from discord.ui import Button, Select, button
-from discord import ButtonStyle, SelectOption, Interaction
-from discord.ext import commands
+from discord import ButtonStyle, SelectOption, Interaction, Embed, Colour
 from discord.utils import get
 
 
-class DropdownMenu(View):
+class PaginatedDropdownMenu(View):
     """
     Menu class that builds for a list of options that may exceed discord's limit of 25.
     Aside from the dropdown menu, two buttons will be shown allowing users to
@@ -17,7 +16,7 @@ class DropdownMenu(View):
     page_index: int = 0
     page_max: int = 0
     placeholder: str = "Make a selection"
-    select_menu_callback: Callable[[List], Any] = None
+    select_menu_callback: Callable[[List, Interaction], Any] = None
 
     def __init__(
         self,
@@ -31,42 +30,8 @@ class DropdownMenu(View):
         self.options = options
         self.placeholder = placeholder
         self.page_max = int((len(options) - 1) / 10)
-        self.select_menu_callback = callback
+        self.select_menu_callback = callback  
         self.load_menu()
-
-    @button(
-        custom_id="back-page",
-        style=ButtonStyle.primary,
-        disabled=True,
-        label="Previous page",
-        row=1,
-    )
-    async def back_callback(self, intxn: Interaction, _button: Button) -> None:
-        """
-        Callback for the page back button
-        """
-        await intxn.response.defer()
-        assert self.page_index != 0
-        self.page_index -= 1
-        self.load_menu()
-        await intxn.message.edit(view=self)
-
-    @button(
-        custom_id="forward-page",
-        style=ButtonStyle.primary,
-        disabled=True,
-        label="Next page",
-        row=1,
-    )
-    async def forward_callback(self, intxn: Interaction, _button: Button) -> None:
-        """
-        Callback for the page forward button
-        """
-        await intxn.response.defer()
-        assert self.page_index != self.page_max
-        self.page_index += 1
-        self.load_menu()
-        await intxn.message.edit(view=self)
 
     def load_menu(self) -> None:
         """
@@ -75,8 +40,8 @@ class DropdownMenu(View):
         select_placeholder = (
             f"{self.placeholder} (page {self.page_index + 1}/{self.page_max + 1})"
         )
-        menu = get(self.children, custom_id="select-menu")
 
+        menu = self.get_item("select-menu")
         if menu is None:
             menu = Select(
                 options=self.options[:10],
@@ -86,14 +51,19 @@ class DropdownMenu(View):
             )
 
             async def callback(intxn: Interaction) -> None:
+                await intxn.response.defer()
+                menu.view.stop()
+                menu.view.clear_items()
                 if self.select_menu_callback:
-                    await self.select_menu_callback(menu.values)
-                else: await intxn.message.reply(f"You selected {menu.values}")
-                await intxn.message.edit(view=self)
+                    await self.select_menu_callback(menu.values, intxn)
+                else: 
+                    await intxn.message.reply(f"You selected {menu.values}")
+                embed = Embed(colour=Colour.dark_gray(), type="rich", description="Menu closed upon selection.")
+                await intxn.edit_original_response(view=menu.view, embed=embed)
 
             menu.callback = callback
             self.add_item(menu)
-            
+
         else:
             start_range = self.page_index * 10
             end_range = start_range + 10
@@ -105,3 +75,41 @@ class DropdownMenu(View):
 
         back_button.disabled = self.page_index == 0
         forward_button.disabled = self.page_index == self.page_max
+
+    @button(
+        custom_id="back-page",
+        style=ButtonStyle.primary,
+        disabled=True,
+        label="Previous page",
+        row=1,
+    )
+    async def back_callback(self, _button: Button, intxn: Interaction) -> None:
+        """
+        Callback for the page back button
+        """
+        await intxn.response.defer()
+        assert self.page_index != 0
+        self.page_index -= 1
+        self.load_menu()
+        await intxn.edit_original_response(view=self)
+
+    @button(
+        custom_id="forward-page",
+        style=ButtonStyle.primary,
+        disabled=True,
+        label="Next page",
+        row=1,
+    )
+    async def forward_callback(
+        self,
+        _button: Button,
+        intxn: Interaction,
+    ) -> None:
+        """
+        Callback for the page forward button
+        """
+        await intxn.response.defer()
+        assert self.page_index != self.page_max
+        self.page_index += 1
+        self.load_menu()
+        await intxn.edit_original_response(view=self)

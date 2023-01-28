@@ -3,17 +3,24 @@ import pytest
 
 import urllib3
 import discord
-from discord.ext import commands
+
 
 import notion
 
 
+
+
 @pytest.fixture(scope="function")
 def fake_discord_context() -> AsyncMock:
-    ctx = AsyncMock(commands.Context)
-    ctx.message = AsyncMock(discord.Message)
-    return ctx
+    return AsyncMock(discord.ApplicationContext)
 
+@pytest.fixture(scope="function")
+def fake_discord_interaction() -> AsyncMock:
+    return AsyncMock(discord.Interaction)
+
+@pytest.fixture(scope="function")
+def fake_discord_intxn_message() -> AsyncMock:
+    return AsyncMock(discord.InteractionMessage)
 
 @pytest.fixture(scope="function")
 def fake_http_response() -> MagicMock:
@@ -21,5 +28,5 @@ def fake_http_response() -> MagicMock:
 
 
 @pytest.fixture(scope="function")
-def fake_page_object() -> MagicMock:
+def fake_notion_page_object() -> MagicMock:
     return MagicMock(notion.data_types.PageObject)

@@ -20,11 +20,12 @@ NOTE_SESSION_PAGE: PageObject = None
 
 MessageType = StrEnum("MessageType", ["FAIL", "SUCCESS", "INFO"])
 
-
-async def emoji_reply(ctx: ApplicationContext, reply: str, msg_type: MessageType, additional_emojis: List[str] = []) -> None:
+async def emoji_reply(ctx: ApplicationContext, reply: str, msg_type: MessageType, additional_emojis: List[str] = None) -> None:
     """
     Reply to a message with an emoji and the attached reply content
     """
+    if additional_emojis is None:
+        additional_emojis = []
     emoji_lib = {
         MessageType.FAIL: "❌",
         MessageType.SUCCESS: "✅",

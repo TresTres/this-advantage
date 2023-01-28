@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 import logging
-from views.menu import DropdownMenu
+from views.menu import PaginatedDropdownMenu
 
 import utils.logging as lg
 from handler.settings import COMPEND_DISCORD_TOKEN
@@ -51,12 +51,6 @@ async def session_page(ctx: discord.ApplicationContext) -> None:
 async def current_session(ctx: discord.ApplicationContext, property: str) -> None:
     await library.get_session_title(ctx)    
 
-
-@bot.slash_command(name="menutest")
-async def test_dropdown(ctx: commands.Context) -> None:
-    option_list = [discord.SelectOption(label=f"choice {i}", value=f"Number {i}") for i in range(20)]
-    view = DropdownMenu(options=option_list, placeholder="choose a number")
-    await ctx.send(view=view)
 
 
 if __name__ == "__main__":
