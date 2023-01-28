@@ -11,10 +11,15 @@ class TestEmojiReply:
         self.context = fake_discord_context
         self.interaction = fake_discord_interaction
         self.message = fake_discord_intxn_message
+        
+        
+    def setup_interaction(self):
         self.context.respond.return_value = self.interaction
         self.interaction.original_response.return_value = self.message
+        
+    def setup_webhook(self):
+        self.context.respond.return_value = self.message
 
-    
     @pytest.mark.parametrize(
         "msg_type, emoji",
         [
@@ -23,14 +28,41 @@ class TestEmojiReply:
             (library.MessageType.INFO, "ℹ️"),
         ],
     )
-    async def test_reply(self, msg_type, emoji):
+    async def test_interaction_reply(self, msg_type, emoji):
+        self.setup_interaction()
         await library.emoji_reply(self.context, "foo", msg_type)
         self.context.respond.assert_called_once_with("foo")
         self.interaction.original_response.assert_called_once()
         self.message.add_reaction.assert_called_once_with(emoji)
+
+
+    @pytest.mark.parametrize(
+        "msg_type, emoji",
+        [
+            (library.MessageType.FAIL, "❌"),
+            (library.MessageType.SUCCESS, "✅"),
+            (library.MessageType.INFO, "ℹ️"),
+        ],
+    )
+    async def test_webhook_msg_reply(self, msg_type, emoji):
+        self.setup_webhook()
+        await library.emoji_reply(self.context, "foo", msg_type)
+        self.context.respond.assert_called_once_with("foo")
+        self.interaction.original_response.assert_not_called()
+        self.message.add_reaction.assert_called_once_with(emoji)
         
-        
-    async def test_reply_with_other_emojis(self):
+    @pytest.mark.parametrize(
+        "response_type",
+        [
+            ("interaction"),
+            ("webhook")
+        ]
+    )
+    async def test_reply_with_other_emojis(self, response_type):
+        if response_type == "interaction":
+            self.setup_interaction()
+        else:
+            self.setup_webhook()
         await library.emoji_reply(self.context, "foo", library.MessageType.INFO, ["💰", "🗑"])
         self.message.add_reaction.assert_has_calls([call("ℹ️"), call("🗑"), call("💰")], any_order=True)   
         

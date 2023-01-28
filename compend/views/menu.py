@@ -16,13 +16,13 @@ class PaginatedDropdownMenu(View):
     page_index: int = 0
     page_max: int = 0
     placeholder: str = "Make a selection"
-    select_menu_callback: Callable[[List, Interaction], Any] = None
+    select_menu_callback: Callable[[List[SelectOption], Interaction], None] = None
 
     def __init__(
         self,
         options: List[SelectOption],
         placeholder: str,
-        callback: Callable[[List], Any] = None,
+        callback: Callable[[List[SelectOption], Interaction], None] = None,
     ):
         super().__init__()
         if not options:
