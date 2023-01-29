@@ -5,7 +5,7 @@ import logging
 from typing import List
 from discord import ApplicationContext, SelectOption, Interaction, Bot
 
-from notion.data_types import PageObject, BlockType
+from notion.data_types import BlockType
 import notion.api as notion
 from handler.state_management import StateManager
 from views.menu import PaginatedDropdownMenu

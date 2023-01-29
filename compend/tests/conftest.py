@@ -32,6 +32,7 @@ def fake_http_response() -> MagicMock:
 def fake_notion_page_object() -> MagicMock:
     return MagicMock(notion.data_types.PageObject)
 
+
 @pytest.fixture(scope="function")
 def fake_redis_client() -> MagicMock:
     return MagicMock(redis.Redis)
