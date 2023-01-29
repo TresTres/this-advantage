@@ -1,11 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 
+import redis
 import urllib3
 import discord
-
-
 import notion
+from handler.state_management import StateManager
 
 
 @pytest.fixture(scope="function")
@@ -31,3 +31,12 @@ def fake_http_response() -> MagicMock:
 @pytest.fixture(scope="function")
 def fake_notion_page_object() -> MagicMock:
     return MagicMock(notion.data_types.PageObject)
+
+@pytest.fixture(scope="function")
+def fake_redis_client() -> MagicMock:
+    return MagicMock(redis.Redis)
+
+
+@pytest.fixture(scope="function")
+def fake_state_manager() -> MagicMock:
+    return MagicMock(StateManager)

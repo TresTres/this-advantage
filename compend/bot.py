@@ -1,10 +1,11 @@
 # __main__
 import discord
+import redis
 from discord.ext import commands
 import logging
 
 import utils.logging as lg
-from handler.settings import COMPEND_DISCORD_TOKEN
+from handler.settings import COMPEND_DISCORD_TOKEN, REDIS_PASSPHRASE
 from handler import library, state_management
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,9 @@ lg.attach_stdout_handler(logger)
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(case_insensitive=True, intents=intents)
-manager = state_management.StateManager()
+
+redis_client = redis.Redis(password=REDIS_PASSPHRASE, decode_responses=True)
+manager = state_management.StateManager(client=redis_client)
 
 
 @bot.event

@@ -4,7 +4,6 @@ import logging
 from typing import Any, Dict, Optional
 
 import utils.logging as lg
-from handler.settings import REDIS_PASSPHRASE
 from notion.data_types.data_classes import PageObject
 from notion.api import get_page_object_for_id
 
@@ -29,10 +28,10 @@ class StateManager:
     states: Dict[str, Any]
     client: redis.Redis
 
-    def __init__(self):
+    def __init__(self, client: redis.Redis):
         logger.info("Initializing state manager")
         self.states = defaultdict(dict)
-        self.client = redis.Redis(password=REDIS_PASSPHRASE, decode_responses=True)
+        self.client = client
 
     def save_page(self, guild_id: str, page_name: str, page_object: PageObject) -> None:
         """
