@@ -30,7 +30,7 @@ class PaginatedDropdownMenu(View):
         self.options = options
         self.placeholder = placeholder
         self.page_max = int((len(options) - 1) / 10)
-        self.select_menu_callback = callback  
+        self.select_menu_callback = callback
         self.load_menu()
 
     def load_menu(self) -> None:
@@ -56,9 +56,13 @@ class PaginatedDropdownMenu(View):
                 menu.view.clear_items()
                 if self.select_menu_callback:
                     await self.select_menu_callback(menu.values, intxn)
-                else: 
+                else:
                     await intxn.message.reply(f"You selected {menu.values}")
-                embed = Embed(colour=Colour.dark_gray(), type="rich", description="Menu closed upon selection.")
+                embed = Embed(
+                    colour=Colour.dark_gray(),
+                    type="rich",
+                    description="Menu closed upon selection.",
+                )
                 await intxn.edit_original_response(view=menu.view, embed=embed)
 
             menu.callback = callback

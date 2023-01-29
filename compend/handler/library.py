@@ -19,7 +19,12 @@ lg.attach_stdout_handler(logger)
 MessageType = StrEnum("MessageType", ["FAIL", "SUCCESS", "INFO"])
 
 
-async def emoji_reply(ctx: ApplicationContext, reply: str, msg_type: MessageType, additional_emojis: List[str] = None) -> None:
+async def emoji_reply(
+    ctx: ApplicationContext,
+    reply: str,
+    msg_type: MessageType,
+    additional_emojis: List[str] = None,
+) -> None:
     """
     Reply to a message with an emoji and the attached reply content.
     If this is the first reply, it is treated as an interaction, otherwise it's treated as a webhook message.
@@ -39,13 +44,13 @@ async def emoji_reply(ctx: ApplicationContext, reply: str, msg_type: MessageType
     await response.add_reaction(emoji)
     if additional_emojis:
         asyncio.gather(*[response.add_reaction(eji) for eji in additional_emojis])
-        
+
 
 async def get_home_title(ctx: ApplicationContext, manager: StateManager) -> None:
     """
     Attempts to retrieve the title of the note home page
     """
-    
+
     home_page = await manager.get_page(ctx.guild_id, "home")
     if not home_page:
         await emoji_reply(
@@ -60,7 +65,9 @@ async def get_home_title(ctx: ApplicationContext, manager: StateManager) -> None
     return
 
 
-async def target_note_home(ctx: ApplicationContext, manager: StateManager, target_url: str) -> None:
+async def target_note_home(
+    ctx: ApplicationContext, manager: StateManager, target_url: str
+) -> None:
     """
     Defines the note home page using the sent url if not yet defined
     """
@@ -71,7 +78,9 @@ async def target_note_home(ctx: ApplicationContext, manager: StateManager, targe
         page_object = await notion.get_page_object_for_url(target_url)
         manager.save_page(ctx.guild_id, "home", page_object)
         page_title = page_object.page_title
-        await emoji_reply(ctx, f"Home page set to {page_title}.", MessageType.SUCCESS, ["🏠"])
+        await emoji_reply(
+            ctx, f"Home page set to {page_title}.", MessageType.SUCCESS, ["🏠"]
+        )
     except ValueError as ve:
         await emoji_reply(ctx, str(ve), MessageType.FAIL)
     except notion.FailedRequestException as re:
@@ -82,7 +91,7 @@ async def target_note_home(ctx: ApplicationContext, manager: StateManager, targe
 
 async def get_session_title(ctx: ApplicationContext, manager: StateManager) -> None:
     """
-    Attempts to retrieve the title of the note session page. 
+    Attempts to retrieve the title of the note session page.
     """
     session_page = await manager.get_page(ctx.guild_id, "session")
     if not session_page:
@@ -106,17 +115,25 @@ async def target_session_page(ctx: ApplicationContext, manager: StateManager) ->
             raise ValueError(
                 "Need to specify the note page via /home <target_url> before selecting a session page."
             )
-        children = await notion.get_children_by_type(
-            home_page.id, BlockType.child_page
-        )
+        children = await notion.get_children_by_type(home_page.id, BlockType.child_page)
         sorted_children = sorted(children, key=lambda c: c.child_page.title)
-        options = [SelectOption(label = c.child_page.title, value=c.id) for c in sorted_children]
-        async def menu_callback(selections: List[SelectOption], _intxn: Interaction) -> None:
+        options = [
+            SelectOption(label=c.child_page.title, value=c.id) for c in sorted_children
+        ]
+
+        async def menu_callback(
+            selections: List[SelectOption], _intxn: Interaction
+        ) -> None:
             session_page = await notion.get_page_object_for_id(selections[0])
             manager.save_page(ctx.guild_id, "session", session_page)
             title = session_page.page_title
-            await emoji_reply(ctx, f"Session page set to {title}", MessageType.SUCCESS, ["📓"])
-        view = PaginatedDropdownMenu(options=options, placeholder="Choose a session page", callback=menu_callback)
+            await emoji_reply(
+                ctx, f"Session page set to {title}", MessageType.SUCCESS, ["📓"]
+            )
+
+        view = PaginatedDropdownMenu(
+            options=options, placeholder="Choose a session page", callback=menu_callback
+        )
         await ctx.respond(view=view)
     except ValueError as ve:
         await emoji_reply(ctx, str(ve), MessageType.FAIL)

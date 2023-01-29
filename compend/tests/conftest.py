@@ -8,19 +8,20 @@ import discord
 import notion
 
 
-
-
 @pytest.fixture(scope="function")
 def fake_discord_context() -> AsyncMock:
     return AsyncMock(discord.ApplicationContext)
+
 
 @pytest.fixture(scope="function")
 def fake_discord_interaction() -> AsyncMock:
     return AsyncMock(discord.Interaction)
 
+
 @pytest.fixture(scope="function")
 def fake_discord_intxn_message() -> AsyncMock:
     return AsyncMock(discord.InteractionMessage)
+
 
 @pytest.fixture(scope="function")
 def fake_http_response() -> MagicMock:
