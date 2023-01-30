@@ -89,17 +89,21 @@ async def target_note_home(
         await emoji_reply(ctx, str(ue), MessageType.FAIL, ["🔤"])
 
 
-
-
-async def get_session_info(ctx: ApplicationContext, manager: StateManager, full_info: bool) -> None:
+async def get_session_info(
+    ctx: ApplicationContext, manager: StateManager, full_info: bool
+) -> None:
     """
     Attempts to retrieve summary info of the note session page.
     """
     session_page = await manager.get_page(ctx.guild_id, "session")
     if not session_page:
-        await emoji_reply(ctx, "No session set.  Need to specify a session page via /page session.", MessageType.FAIL)
+        await emoji_reply(
+            ctx,
+            "No session set.  Need to specify a session page via /page session.",
+            MessageType.FAIL,
+        )
         return
-    
+
     if not full_info:
         await emoji_reply(
             ctx,
@@ -110,7 +114,9 @@ async def get_session_info(ctx: ApplicationContext, manager: StateManager, full_
     children = await notion.get_children(session_page.id)
     elements = children.get_all_under_header("Summary")
     text_content = [e.paragraph.text_content for e in elements]
-    embed = Embed(type='rich', title=session_page.page_title, description=text_content[0])
+    embed = Embed(
+        type="rich", title=session_page.page_title, description=text_content[0]
+    )
     await ctx.respond(embed=embed)
 
 

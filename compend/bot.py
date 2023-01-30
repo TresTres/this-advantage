@@ -27,12 +27,12 @@ manager = state_management.StateManager(client=redis_client)
 
 
 def deferring_command(func: Coroutine):
-    
     @wraps(func)
     async def wrapper(*args, **kwargs):
         if isinstance(args[0], discord.ApplicationContext):
             await args[0].interaction.response.defer()
         await func(*args, **kwargs)
+
     return wrapper
 
 
@@ -83,7 +83,7 @@ async def session_page(ctx: discord.ApplicationContext) -> None:
             choices=[
                 discord.OptionChoice(name="Yes", value="1"),
                 discord.OptionChoice(name="No", value=""),
-            ]
+            ],
         )
     ],
 )
