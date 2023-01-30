@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional, Union
+import unicodedata
 from pydantic import BaseModel
 from notion.data_types.type_enums import RTOType, PropertyType, BlockType
 
@@ -15,6 +16,17 @@ class RichTextObject(BaseModel):
     href: Optional[str]
 
 
+class TextContentMixin(BaseModel):
+
+    rich_text: List[RichTextObject]
+    color: str
+
+    @property
+    def text_content(self) -> str:
+        content = "".join(t.plain_text for t in self.rich_text)
+        return unicodedata.normalize("NFKD", content)
+
+
 class PropertyObject(BaseModel):
     id: str
     type: PropertyType
@@ -27,6 +39,14 @@ class TitleObject(PropertyObject):
         return "".join([t.plain_text for t in self.title])
 
 
+class HeadingObject(TextContentMixin):
+    is_toggleable: bool
+
+
+class ParagraphObject(TextContentMixin):
+    children: Optional[List["BlockObject"]]
+
+
 class ChildPageObject(BaseModel):
     title: str
 
@@ -37,6 +57,14 @@ class BlockObject(BaseModel):
     type: BlockType
     has_children: bool
     child_page: Optional[ChildPageObject]
+    heading_1: Optional[HeadingObject]
+    heading_2: Optional[HeadingObject]
+    heading_3: Optional[HeadingObject]
+    paragraph: Optional[ParagraphObject]
+
+    @property
+    def active_heading(self):
+        return self.heading_1 or self.heading_2 or self.heading_3 or None
 
 
 class PageObject(BaseModel):
