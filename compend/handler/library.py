@@ -3,7 +3,7 @@ import asyncio
 from strenum import StrEnum
 import logging
 from typing import List
-from discord import ApplicationContext, SelectOption, Interaction, Bot
+from discord import ApplicationContext, SelectOption, Interaction, Embed
 
 from notion.data_types import BlockType
 import notion.api as notion
@@ -50,7 +50,6 @@ async def get_home_title(ctx: ApplicationContext, manager: StateManager) -> None
     """
     Attempts to retrieve the title of the note home page
     """
-
     home_page = await manager.get_page(ctx.guild_id, "home")
     if not home_page:
         await emoji_reply(
@@ -72,6 +71,7 @@ async def target_note_home(
     Defines the note home page using the sent url if not yet defined
     """
     if not target_url:
+
         await get_home_title(ctx, manager)
         return
     try:
@@ -89,20 +89,29 @@ async def target_note_home(
         await emoji_reply(ctx, str(ue), MessageType.FAIL, ["🔤"])
 
 
-async def get_session_title(ctx: ApplicationContext, manager: StateManager) -> None:
+
+
+async def get_session_info(ctx: ApplicationContext, manager: StateManager, full_info: bool) -> None:
     """
-    Attempts to retrieve the title of the note session page.
+    Attempts to retrieve summary info of the note session page.
     """
     session_page = await manager.get_page(ctx.guild_id, "session")
     if not session_page:
-        await emoji_reply(ctx, "Session is not currently specified.", MessageType.INFO)
+        await emoji_reply(ctx, "No session set.  Need to specify a session page via /page session.", MessageType.FAIL)
         return
-    await emoji_reply(
-        ctx,
-        f"Session currently set to {session_page.page_title}.",
-        MessageType.INFO,
-    )
-    return
+    
+    if not full_info:
+        await emoji_reply(
+            ctx,
+            f"Session currently set to {session_page.page_title}.",
+            MessageType.INFO,
+        )
+        return
+    children = await notion.get_children(session_page.id)
+    elements = children.get_all_under_header("Summary")
+    text_content = [e.paragraph.text_content for e in elements]
+    embed = Embed(type='rich', title=session_page.page_title, description=text_content[0])
+    await ctx.respond(embed=embed)
 
 
 async def target_session_page(ctx: ApplicationContext, manager: StateManager) -> None:
@@ -113,7 +122,7 @@ async def target_session_page(ctx: ApplicationContext, manager: StateManager) ->
     try:
         if not home_page:
             raise ValueError(
-                "Need to specify the note page via /home <target_url> before selecting a session page."
+                "Need to specify the note page via /page home <target_url> before selecting a session page."
             )
         children = await notion.get_children_by_type(home_page.id, BlockType.child_page)
         sorted_children = sorted(children, key=lambda c: c.child_page.title)

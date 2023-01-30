@@ -40,7 +40,7 @@ class StateManager:
         guild_state = self.states[guild_id]
         guild_state.update({page_name: page_object})
         self.client.set(f"{guild_id}:{page_name}", page_object.id)
-        logger.info("Saved page {guild_id}:{page_name}")
+        logger.info(f"Saved page {guild_id}:{page_name}")
 
     def get_from_state(self, guild_id: str, page_name: str) -> PageObject:
         """
