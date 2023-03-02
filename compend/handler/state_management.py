@@ -35,7 +35,7 @@ class StateManager:
 
     def save_page(self, guild_id: str, page_name: str, page_object: PageObject) -> None:
         """
-        Save a page object to a guild's state.
+        Save a page object.  Writes to state and the store.
         """
         guild_state = self.states[guild_id]
         guild_state.update({page_name: page_object})
@@ -44,7 +44,7 @@ class StateManager:
 
     def get_from_state(self, guild_id: str, page_name: str) -> PageObject:
         """
-        Retrieve a page object from guild state.
+        Attempt to retrieve a page from state.
         """
         if not (guild_state := self.states[guild_id]):
             raise UnsavedObjectException(
@@ -59,7 +59,8 @@ class StateManager:
 
     async def get_page(self, guild_id: str, page_name: str) -> Optional[PageObject]:
         """
-        Retrieve a page object from guild state or from client.
+        Retrieve a page from state if available, otherwise will call the API 
+        and write result to state and store.
         """
         try:
             return self.get_from_state(guild_id, page_name)
